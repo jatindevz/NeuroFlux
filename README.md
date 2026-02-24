@@ -1,4 +1,4 @@
-# 🧠 BrainEnergy‑21  
+# 🧠 NeuroFlux  
 <br>
 ![React Native](https://img.shields.io/badge/React%20Native-0.81.5-blue?logo=react)&nbsp;![Expo](https://img.shields.io/badge/Expo-54.0.33-5f3dc4?logo=expo)&nbsp;![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-blue?logo=typescript)&nbsp;![Zustand](https://img.shields.io/badge/Zustand-5.0.11-green?logo=react)&nbsp;![AsyncStorage](https://img.shields.io/badge/AsyncStorage-2.2.0-yellow?logo=react)&nbsp;![SVG](https://img.shields.io/badge/SVG-react--native--svg-red)
 
@@ -166,4 +166,4 @@ Please follow the existing coding style and add tests where appropriate. For maj
 
 ---
 
-Thanks for checking out **BrainEnergy‑21**! Let's build healthier brains, one day at a time. 💪
+Thanks for checking out **NeuroFlux**! Let's build healthier brains, one day at a time. 💪
