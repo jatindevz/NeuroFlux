@@ -16,17 +16,17 @@ function RootLayoutNav() {
   const router = useRouter();
 
 
-    useEffect(() => {
-  const checkOnboarding = async () => {
-    const complete = await AsyncStorage.getItem("@onboarding_complete");
-    if (!complete) {
-      router.replace("/(intro)/screen1");
-    }else{
-      router.replace("/(tabs)/(home)");
-    }
-  };
-  checkOnboarding();
-}, []);
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      const complete = await AsyncStorage.getItem("@onboarding_complete");
+      if (!complete) {
+        router.replace("/(intro)/screen1");
+      } else {
+        router.replace("/(tabs)/(home)");
+      }
+    };
+    checkOnboarding();
+  }, []);
 
   return (
     <Stack
@@ -44,7 +44,6 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const checkAndResetDay = useBrainStore((s) => s.checkAndResetDay);
-  
 
   useEffect(() => {
     checkAndResetDay();

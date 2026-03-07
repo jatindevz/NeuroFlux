@@ -51,7 +51,7 @@ export default function Reset21Screen() {
     completedTasks,
   } = store;
 
-  // ✅ UI State (No countdown timers)
+  // ✅ UI State
   const [selectedMode, setSelectedMode] = useState<
     "foundation" | "build" | null
   >(null);
@@ -61,20 +61,26 @@ export default function Reset21Screen() {
   const [timerModalVisible, setTimerModalVisible] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<number | null>(null);
   const [breathingActive, setBreathingActive] = useState(false);
   const [delayActive, setDelayActive] = useState(false);
   const [delaySeconds, setDelaySeconds] = useState(600);
-  const delayRef = useRef<NodeJS.Timeout | null>(null);
+  const delayRef = useRef<number | null>(null);
 
   const breathAnim = useRef(new Animated.Value(1)).current;
 
-  // ✅ Check 4 AM Rollover on Mount & AppState Change
+  // ✅ Force re-render after rollover check to ensure UI updates
+  const [, forceUpdate] = useState(0);
+
+  // ✅ Check Midnight Rollover on Mount & AppState Change
   useEffect(() => {
     store.checkDayRollover();
+    forceUpdate((n) => n + 1); // Force re-render after check
+
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState === "active") {
         store.checkDayRollover();
+        forceUpdate((n) => n + 1); // Force re-render after check
       }
     });
     return () => subscription.remove();
@@ -127,8 +133,6 @@ export default function Reset21Screen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     store.completeTask(taskId);
   };
-
-  // ✅ REMOVED: handleFinishDay (No manual finish button)
 
   // ✅ Handle Restart Challenge
   const handleRestartChallenge = () => {
@@ -266,8 +270,8 @@ export default function Reset21Screen() {
   };
 
   // ✅ Check if Required Task is Done (for UI Banner)
-  const requiredTaskDone = 
-    currentDayTasks.required && 
+  const requiredTaskDone =
+    currentDayTasks.required &&
     completedTasks.includes(currentDayTasks.required.id);
 
   // Onboarding view
@@ -444,12 +448,12 @@ export default function Reset21Screen() {
           />
         </View>
 
-        {/* ✅ Day Complete Banner (Shows if Required Done, but before 4 AM) */}
+        {/* ✅ Day Complete Banner (Updated Text for Midnight Logic) */}
         {requiredTaskDone && (
           <View style={styles.completeBanner}>
             <Feather name="check-circle" size={20} color={Colors.success} />
             <Text style={styles.completeBannerText}>
-              Day {day} Complete! Optional tasks still available until 4 AM.
+              Day {day} Complete! Optional tasks available until midnight.
             </Text>
           </View>
         )}

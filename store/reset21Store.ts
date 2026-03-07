@@ -24,14 +24,12 @@ export interface Reset21State {
     required: Task | null;
     optional: Task[];
   };
-  // ✅ Tracks the date string (YYYY-MM-DD) when the current day cycle began
-  lastResetDate: string | null;
+  lastResetDate: string | null; // Tracks the local date string (YYYY-MM-DD) of the last rollover
 }
 
 export interface Reset21Actions {
   startChallenge: (mode: "foundation" | "build") => void;
   completeTask: (taskId: string) => void;
-  // ✅ Checks if 4 AM has passed and auto-advances day
   checkDayRollover: () => void;
   generateDailyTasks: () => void;
   reset: () => void;
@@ -181,17 +179,14 @@ const generateDailyTasks = (
   return { required, optional };
 };
 
-// ✅ Helper: Get today's date string (YYYY-MM-DD)
-const getTodayString = () => new Date().toISOString().split("T")[0];
-
-// ✅ Helper: Check if current time is past 4 AM relative to lastResetDate
-const isPast4AM = (lastResetDate: string | null) => {
-  if (!lastResetDate) return false;
+// ✅ FIXED: Get local date string (YYYY-MM-DD) using local components
+// This avoids UTC vs Local timezone mismatches
+const getTodayString = () => {
   const now = new Date();
-  // Construct the 4 AM threshold for the day AFTER lastResetDate
-  const threshold = new Date(`${lastResetDate}T04:00:00`);
-  threshold.setDate(threshold.getDate() + 1);
-  return now >= threshold;
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export const useReset21Store = create<Reset21State & Reset21Actions>()(
@@ -212,7 +207,7 @@ export const useReset21Store = create<Reset21State & Reset21Actions>()(
         set({
           mode,
           started: true,
-          lastResetDate: today, // ✅ Anchor start date
+          lastResetDate: today,
           day: 1,
           points: 0,
           streak: 0,
@@ -229,38 +224,40 @@ export const useReset21Store = create<Reset21State & Reset21Actions>()(
           state.currentDayTasks.required.id === taskId
             ? state.currentDayTasks.required
             : state.currentDayTasks.optional.find((t) => t.id === taskId);
-        
+
         if (!task) return;
-        if (state.completedTasks.includes(taskId)) return; // Already done
+        if (state.completedTasks.includes(taskId)) return;
 
         const newPoints = state.points + task.points;
-        
-        // ✅ UPDATED: Only mark task as done. DO NOT advance day here.
-        // ✅ DO NOT lock optional tasks.
+
         set({
           points: newPoints,
           completedTasks: [...state.completedTasks, taskId],
         });
       },
 
-      // ✅ UPDATED: Check if 4 AM has passed and auto-advance
+      // ✅ SIMPLIFIED: Checks if Local Date has changed since last reset (Midnight Rollover)
       checkDayRollover: () => {
         const state = get();
         if (!state.started || !state.lastResetDate) return;
 
-        // ✅ Check if current time is past 4 AM threshold
-        if (isPast4AM(state.lastResetDate)) {
+        const today = getTodayString();
+
+        // ✅ If today's date string is greater than last reset date, roll over
+        // This handles the midnight crossover automatically
+        if (today > state.lastResetDate) {
           const requiredId = state.currentDayTasks.required?.id;
-          const wasRequiredDone = requiredId && state.completedTasks.includes(requiredId);
+          const wasRequiredDone =
+            requiredId && state.completedTasks.includes(requiredId);
 
           let newStreak = state.streak;
-          
-          // ✅ Streak Logic: Only increment if required task was completed before 4 AM
+
+          // ✅ Streak Logic: Only increment if required task was completed before midnight
           if (wasRequiredDone) {
             newStreak = state.streak + 1;
           } else {
             // Streak broken if required task missed
-            newStreak = 0; 
+            newStreak = 0;
           }
 
           let newDay = state.day + 1;
@@ -282,7 +279,7 @@ export const useReset21Store = create<Reset21State & Reset21Actions>()(
             streak: newStreak,
             completedTasks: [], // Reset for new day
             currentDayTasks: { required, optional },
-            lastResetDate: getTodayString(), // ✅ Update anchor to today
+            lastResetDate: today, // ✅ Update anchor to today
           });
         }
       },
@@ -311,6 +308,12 @@ export const useReset21Store = create<Reset21State & Reset21Actions>()(
     {
       name: "reset21-storage",
       storage: createJSONStorage(() => AsyncStorage),
+      // ✅ Ensure rollover is checked immediately after storage hydration
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.checkDayRollover();
+        }
+      },
     },
   ),
 );
